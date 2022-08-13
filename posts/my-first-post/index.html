@@ -1,0 +1,390 @@
+<!doctype html><html lang=en-us>
+<head>
+<title>SAM E51 Curiosity Nano programming with Zig #1 // r4gus</title>
+<link rel="shortcut icon" href=/favicon.ico>
+<meta charset=utf-8>
+<meta name=generator content="Hugo 0.88.1">
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta name=author content="David P. Sugar">
+<meta name=description content="An introductory course on programming microcontroller based systems.">
+<link rel=stylesheet href=https://r4gus.github.io/css/main.min.88e7083eff65effb7485b6e6f38d10afbec25093a6fac42d734ce9024d3defbd.css>
+<meta name=twitter:card content="summary">
+<meta name=twitter:title content="SAM E51 Curiosity Nano programming with Zig #1">
+<meta name=twitter:description content="An introductory course on programming microcontroller based systems.">
+<meta property="og:title" content="SAM E51 Curiosity Nano programming with Zig #1">
+<meta property="og:description" content="An introductory course on programming microcontroller based systems.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://r4gus.github.io/posts/my-first-post/"><meta property="article:section" content="posts">
+<meta property="article:published_time" content="2022-08-09T01:31:16+02:00">
+<meta property="article:modified_time" content="2022-08-13T14:42:47+02:00"><meta property="og:site_name" content="r4gus">
+</head>
+<body>
+<header class=app-header>
+<a href=https://r4gus.github.io/><img class=app-header-avatar src=/me.jpg alt="David P. Sugar"></a>
+<h1>r4gus</h1>
+<nav class=app-header-menu>
+<a class=app-header-menu-item href=/about>About</a>
+-
+<a class=app-header-menu-item href=/showcase>Showcase</a>
+</nav>
+<p>hic Rhodus, hic salta</p>
+<div class=app-header-social>
+<a href=https://github.com/r4gus target=_blank rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github"><title>My Github</title><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37.0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44.0 0020 4.77 5.07 5.07.0 0019.91 1S18.73.65 16 2.48a13.38 13.38.0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07.0 005 4.77 5.44 5.44.0 003.5 8.55c0 5.42 3.3 6.61 6.44 7A3.37 3.37.0 009 18.13V22"/></svg>
+</a>
+</div>
+</header>
+<main class=app-container>
+<article class=post>
+<header class=post-header>
+<h1 class=post-title>SAM E51 Curiosity Nano programming with Zig #1</h1>
+<div class=post-meta>
+<div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar"><title>calendar</title><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+Aug 9, 2022
+</div>
+<div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock"><title>clock</title><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+14 min read
+</div>
+<div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag"><title>tag</title><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83.0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+<a class=tag href=https://r4gus.github.io/tags/embedded/>embedded</a>
+<a class=tag href=https://r4gus.github.io/tags/atsame51j20a/>atsame51j20a</a>
+<a class=tag href=https://r4gus.github.io/tags/mcu/>mcu</a>
+</div>
+</div>
+</header>
+<div class=post-content>
+<p>This series of posts is inspired by the <a href=https://docs.rust-embedded.org/discovery/microbit/>Rust Discovery Book</a>, a great learning resource on how to program microcontrollers using Rust. We&rsquo;re going to program the <a href=https://www.microchip.com/en-us/development-tool/EV76S68A>SAM E51 Curiosity Nano</a> using the <a href=https://ziglang.org/>Zig</a> programming language, which is new and not quite production ready so be prepared to encounter some breaking changes.</p>
+<h2 id=introduction>Introduction</h2>
+<h3 id=scope>Scope</h3>
+<p>Eventually, the following topics will be covered:</p>
+<ul>
+<li>How to write, build and flash an &ldquo;embedded&rdquo; (Zig) program using <a href=https://github.com/ZigEmbeddedGroup/microzig>MicroZig</a>, <a href=https://github.com/ZigEmbeddedGroup/regz>Regz</a> and <a href=https://www.microchip.com/en-us/tools-resources/develop/microchip-studio#Downloads>Microchip Studio</a> (flashing).</li>
+<li>Functionality (&ldquo;peripherals&rdquo;) commonly found in microcontrollers like:
+<ul>
+<li>digital input and output</li>
+<li>pulse width modulation (PWM)</li>
+<li>analog to digital converters (ADC)</li>
+<li>common communication protocols like:
+<ul>
+<li>U(S)ART</li>
+<li>I2C</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Multitasking concepts:
+<ul>
+<li>cooperative vs preemptive multitasking</li>
+<li>interrupts</li>
+<li>schedulers</li>
+</ul>
+</li>
+<li>Cryptography</li>
+</ul>
+<h3 id=approach>Approach</h3>
+<ul>
+<li>As much as possible beginner friendly, but because there are no existing resources for the ATSAME51J20A chip we need to set up everything ourselves.</li>
+</ul>
+<h3 id=non-goals>Non-goals</h3>
+<p>What&rsquo;s out of scope for this series of posts:</p>
+<ul>
+<li>Teaching Zig. We&rsquo;ll focus on programming microcontrollers.</li>
+<li>Being a comprehensive text about electric circuit theory or electronics.</li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> This book will make exclusive use of the SAM E51
+Curiosity Nano. Because we&rsquo;re going to use Microchip Studio
+to flash the device, you need a Windows PC. I haven&rsquo;t found
+a good tool for Linux yet.</p>
+</blockquote>
+<h3 id=reporting-problems>Reporting problems</h3>
+<p>The source of this book is in <a href=https://github.com/r4gus/r4gus.github.io>this repository</a>. If you encounter any typo or problem with the code, please report it on the <a href=https://github.com/r4gus/r4gus.github.io/issues/new>issue tracker</a>.</p>
+<h3 id=other-embedded-zig-resources>Other embedded Zig resources</h3>
+<p>The <a href=https://zeg.random-projects.net/>Zig Embedded Group</a> offers more learning material on programming embedded devices and maintains the libraries (MicroZig and Regz) we&rsquo;re going to use throughout this course.</p>
+<h2 id=background>Background</h2>
+<h3 id=whats-a-microcontroller>What&rsquo;s a microcontroller?</h3>
+<p>A microcontroller is a <em>system on a chip</em> (SOC). Whereas your computer is made up of several discrete components: a processor, RAM, storage, an Ethernet port, etc.; a microcontroller has all those types of components built into a single chip. This makes it possible to build systems with fewer parts.</p>
+<h3 id=why-use-zig-and-not-c-or-rust>Why use Zig and not C or Rust?</h3>
+<p>Because you&rsquo;re interested in Zig and microcontrollers. Honestly, there aren&rsquo;t many reasons at the moment. You&rsquo;ll encounter breaking changes because the language is still in development and there are almost no Zig frameworks/ tools for programming microcontrollers at the moment. If you want to create the next big thing, you&rsquo;ll probably want to stay away from Zig at the moment.</p>
+<h2 id=requirements>Requirements</h2>
+<p>The primary requirement to read this series of posts is to know some Zig, i.e. to be at least somewhat comfortable with structs, pointers, and arrays.</p>
+<p>Also, to follow this material you&rsquo;ll need the following hardware:</p>
+<ul>
+<li>A <a href=https://www.microchip.com/en-us/development-tool/EV76S68A>SAM E51 Curiosity Nano</a> using the <a href=https://ziglang.org/>Zig</a> board (You can purchase this board from several electronic suppliers).</li>
+</ul>
+<p><img src=/sam-e51-curiosity-nano.jpg alt=MCU></p>
+<ul>
+<li>A micro-B USB cable, to connect the Curiosity Nano to your computer. The cable must support data transfer.</li>
+</ul>
+<blockquote>
+<p><strong>FAQ</strong>: Can I follow this guide with a different development board?</p>
+<p>Probably. While there are many different boards and processors, the general concepts stay similar.
+If you choose a different board, you&rsquo;ll need the datasheets for the development board and processor,
+e.g. to lookup addresses.</p>
+</blockquote>
+<h2 id=setting-up-a-development-environment>Setting up a development environment</h2>
+<p>Because Zig supports cross-compilation out of the box, i.e. compiling code for an architecture that differs from the one you&rsquo;re developing on, we don&rsquo;t need to install any additional toolchains. Nevertheless, we still need some things before we can get started.</p>
+<h3 id=documentation>Documentation</h3>
+<p>Without documentation, it&rsquo;s pretty much impossible to work with microcontrollers. We&rsquo;ll be referring to the following documents throughout this book:</p>
+<ul>
+<li><a href=https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM_D5x_E5x_Family_Data_Sheet_DS60001507G.pdf>SAM D5x/E5x Family Data Sheet</a></li>
+<li><a href=https://ww1.microchip.com/downloads/en/DeviceDoc/SAME51-Curiosity-Nano-User-Guide-DS70005432A.pdf>SAM E51 Curiosity Evaluation Kit User Guide</a></li>
+</ul>
+<h3 id=tools>Tools</h3>
+<p>We&rsquo;ll use the tools listed below.</p>
+<ul>
+<li>Zig (<strong>DEV NOTE</strong>: freeze at v10.0 as soon as released)</li>
+<li><a href=https://git-scm.com/>Git</a></li>
+<li><a href=https://github.com/ZigEmbeddedGroup/microzig>MicroZig</a></li>
+<li><a href=https://github.com/ZigEmbeddedGroup/regz>Regz</a></li>
+<li><a href=https://www.microchip.com/en-us/tools-resources/develop/microchip-studio#Downloads>Microchip Studio</a></li>
+</ul>
+<blockquote>
+<p><strong>Note</strong>: You can execute all stated instructions in a Shell/ PowerShell.</p>
+</blockquote>
+<h4 id=zig>Zig</h4>
+<p>To install Zig you can follow the official <a href=https://ziglang.org/learn/getting-started/>getting started guide</a>.</p>
+<h4 id=microzig>MicroZig</h4>
+<p>When it comes to MicroZig we&rsquo;re left with two options. We can either add it directly as a <a href=https://git-scm.com/book/en/v2/Git-Tools-Submodules>submodule</a> to our project or fork it and add our fork as a submodule. I&rsquo;ll use the latter option because I&rsquo;m going to make some changes to the library.</p>
+<h4 id=regz>Regz</h4>
+<p>To install Regz just clone the project using Git and build it with Zig.</p>
+<pre tabindex=0><code>git clone https://github.com/ZigEmbeddedGroup/regz.git
+cd regz
+zig build
+</code></pre><p>You can consider this a test that you&rsquo;ve installed Zig correctly. Zig will place the binary in <code>zig-out/bin/regz</code>.</p>
+<h4 id=microchip-studio>Microchip Studio</h4>
+<p>Just download the installer from the website and execute it.</p>
+<h2 id=meet-your-hardware>Meet your hardware</h2>
+<p><img src=/sam-e51-curiosity-nano.jpg alt="Example Image"></p>
+<p>The SAM E51 Curiosity Nano evaluation board contains the following components:</p>
+<ul>
+<li>A microcontroller (SAME51J20A)</li>
+<li>Two LEDs (User LED and Power/Status LED)</li>
+<li>A User Switch (Button)</li>
+<li>A Debugger</li>
+<li>One USB port</li>
+</ul>
+<p>Of these components, the most important is the microcontroller (MCU), which is the big black square in the middle of the board. The MCU is what runs your code. When we talk about &ldquo;programming a board&rdquo;, in reality, we mean programming the MCU that is part of the board. Let&rsquo;s take a closer look at the MCU.</p>
+<h3 id=same51j20a>SAME51J20A</h3>
+<p>The name of our MCU seems random at first but it contains a lot of information about its characteristics. <code>SAM</code> stands for <em>Smart ARM Microcontroller</em> (the product familiy), <code>E51</code> tells you that the MCU is a ARM Coretex-M4F (advanced feature set + 2x Controller Area Network (CAN)), <code>J</code> means that the MCU has 64 Pins in total (which we&rsquo;re going to control soon), <code>20</code> tells you that the MCU has 1 MB of flash memory for storing your program and <code>A</code> stands for <em>default variant</em>.</p>
+<p>The chip is packed with different &ldquo;peripherals&rdquo;, i.e. building blocks that enable the MCU to fulfill different tasks like doing cryptography in hardware or talking to a computer using a serial interface. We&rsquo;ll look at some of those peripherals in the future.</p>
+<h2 id=set-up-the-project>Set up the project</h2>
+<p>Before we can start programming, we need to set up our project. I&rsquo;ll guide you through the steps necessary to add support for a new chip to the MicroZig library. Create a new folder and execute the following command within:</p>
+<pre tabindex=0><code>zig init-exe
+</code></pre><p>Your project folder should now contain the following files:</p>
+<ul>
+<li><code>build.zig</code> - contains the build script for your project</li>
+<li><code>src/main.zig</code> - contains the main function (the entry point of your program)</li>
+</ul>
+<p>The MicroZig library offers help when it comes to building the project and generalized interfaces for GPIO and peripherals. Create a new folder called <code>libs</code> and add MicroZig as a submodule.</p>
+<blockquote>
+<p><strong>Note</strong>: You may want to fork MicroZig and add your fork as a submodule.</p>
+</blockquote>
+<pre tabindex=0><code>cd libs
+git submodule add https://github.com/ZigEmbeddedGroup/microzig.git
+</code></pre><p>MicroZig supports a variety of chips (see <code>microzig/src/modules/chips</code>). To add support for our <code>SAME51J20A</code> chip, we add a new folder to <code>microzig/src/modules/chips</code> called <code>atsame51j20a</code> which will contain the chip-specific Zig code.</p>
+<h3 id=generate-zig-code-from-an-svd-file>Generate Zig code from an SVD file</h3>
+<p>Vendors often publish files that describe the special function register layout of a microcontroller called <em>System View Description</em> (SVD).
+The Regz tool can translate an SVD file into Zig code that can be used with libraries like MicroZig to gain access to special function registers, e.g. the Port.
+Download the <a href=https://github.com/posborne/cmsis-svd/blob/master/data/Atmel/ATSAME51J20A.svd>ATSAME51J20A.svd</a> file and then use Regz to translate it into Zig code.</p>
+<pre tabindex=0><code>regz ATSAME51J20A.svd &gt; microzig/src/modules/atsame51j20a/registers.zig
+</code></pre><blockquote>
+<p><strong>Note</strong>: I found a issue with Regz, where the tool translates addresses into numbers of type <code>comptime_int</code>.
+If you encounter an error like <code>error: expected pointer, found 'comptime_int'</code> use <code>@intToPtr</code>
+to cast the numbers to pointers, e.g. modify <code>pub const base_address = 0x41008000</code> to
+<code>pub const base_address = @intToPtr([*]u8, 0x41008000)</code>.</p>
+<p><strong>Update</strong>: The issue has been <a href=https://github.com/ZigEmbeddedGroup/regz/pull/50>fixed</a>.</p>
+</blockquote>
+<p>Now let&rsquo;s look at how the generated file is structured.</p>
+<p>The file contains one large struct called <code>registers</code> which itself contains a lot of nested structs. Most of those nested structs represent either a peripheral like a port, serial interfaces, or other important memory-mapped registers to control the behavior and functionality of the chip.</p>
+<p>The microcontroller we&rsquo;re working with has 64 Pins split into two groups A and B with 32 Pins each. We can control each pin by manipulating the <code>PORT</code> (I/O Pin Controller) at address <code>0x41008000</code> (Port A) and <code>0x41008000 + 0x80</code> (Port B).</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> registers <span style=color:#f92672>=</span> <span style=color:#66d9ef>struct</span> {
+    <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>
+    <span style=color:#75715e>/// Port Module
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> PORT <span style=color:#f92672>=</span> <span style=color:#66d9ef>struct</span> {
+        <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> base_address <span style=color:#f92672>=</span> @intToPtr([<span style=color:#f92672>*</span>]<span style=color:#66d9ef>u8</span>, <span style=color:#ae81ff>0x41008000</span>);
+        <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> version <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;U22102.2.0&#34;</span>;
+
+        <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>    }
+
+    <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>}
+</code></pre></div><p>Each nested struct starts with a <code>base_address</code> definition which defines the address in memory at which the group of registers that make up the peripheral can be found. To get an overview of the memory mapping check out the datasheet on <a href=https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM_D5x_E5x_Family_Data_Sheet_DS60001507G.pdf>page 51</a>.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig> <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> GROUP <span style=color:#f92672>=</span> @ptrCast(<span style=color:#f92672>*</span><span style=color:#66d9ef>volatile</span> [<span style=color:#ae81ff>2</span>]<span style=color:#66d9ef>packed</span> <span style=color:#66d9ef>struct</span> {
+    <span style=color:#75715e>/// Data Direction
+</span><span style=color:#75715e></span>    DIR<span style=color:#f92672>:</span> <span style=color:#66d9ef>u32</span>,
+
+    <span style=color:#75715e>/// Data Direction Clear
+</span><span style=color:#75715e></span>    DIRCLR<span style=color:#f92672>:</span> <span style=color:#66d9ef>u32</span>,
+
+    <span style=color:#75715e>/// Data Direction Set
+</span><span style=color:#75715e></span>    DIRSET<span style=color:#f92672>:</span> <span style=color:#66d9ef>u32</span>,
+
+    <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>
+}, base_address);
+
+</code></pre></div><p>The base address, plus an optional offset, is then cast to a struct that represents one or multiple registers in memory. This makes it easier to work with peripherals because you&rsquo;re able to reference specific memory regions by name. In the example above the <code>base_address</code> is cast to an array called <code>GROUP</code> of two structs, where the first struct (index 0) represents port group A (PA) and the second represents port group B (PB).</p>
+<p>Say you want to set pin 14 of port group A (PA14) as output. To accomplish that you can access the first element of <code>GROUP</code> and write a <code>1</code> into bit 14 of the <code>DIRSET</code> register, i.e. <code>registers.PORT.GROUP[0].DIRSET = (1 &lt;&lt; 14)</code>. This is much better than writing something like <code>*(int*)(41008000 + 8) = (1 &lt;&lt; 14)</code> because you can express your intentions more clearly.</p>
+<p>One important thing to note is, that the nested structs represent an idealized version of the register layout, i.e. multiple structs can represent the same memory region (share the same address and size in memory), and the decision on which struct to use depends on the context you&rsquo;re working in.</p>
+<h3 id=defining-the-chip>Defining the Chip</h3>
+<p>Next, we&rsquo;ll write some Zig code for the ATSAME51J20A. Create a new file in <code>microzig/src/modules/chips/atsame51j20a</code> called <code>atsame51j20a.zig</code> and paste the following code:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>// microzig/src/modules/chips/atsame51j20a/atsame51j20a.zig
+</span><span style=color:#75715e></span>
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> cpu <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;cpu&#34;</span>);
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> micro <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;microzig&#34;</span>);
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> chip <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;registers.zig&#34;</span>);
+
+<span style=color:#66d9ef>const</span> regs <span style=color:#f92672>=</span> chip.registers;
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>usingnamespace</span> chip;
+
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> clock_frequencies <span style=color:#f92672>=</span> . {
+    .cpu <span style=color:#f92672>=</span> <span style=color:#ae81ff>120_000_000</span>, <span style=color:#75715e>// Arm Cortex-M4 runs at 120 MHz
+</span><span style=color:#75715e></span>};
+</code></pre></div><p>We import the register file we created in the last section as <code>chip</code> and assign the <code>chip.registers</code> constant to a new constant called <code>regs</code> so we don&rsquo;t have to write so much. Also, we define the cpu clock frequency to be 120MHz.</p>
+<p>The remaining goal of this chapter is to blink the status led (PA14). To make that happen we&rsquo;re going to use the existing <a href=https://github.com/ZigEmbeddedGroup/microzig/blob/main/src/core/pin.zig>PIN</a> and <a href=https://github.com/ZigEmbeddedGroup/microzig/blob/main/src/core/gpio.zig>GPIO</a> interface of microzig. Let&rsquo;s start with the pin.</p>
+<p>The function <code>microzig.Pin</code> takes a string of the form <code>P{port}{number}</code> and returns a anonymous struct that represents the given pin. This pin-wrapper is then used as argument by other functions, e.g. the GPIO functions we&rsquo;ll implement soon. <code>microzig.Pin</code> expects each chip to implement the <code>parsePin</code> function.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>// microzig/src/modules/chips/atsame51j20a/atsame51j20a.zig
+</span><span style=color:#75715e></span>
+<span style=color:#75715e>/// Get access to the pin specified by `spec`.
+</span><span style=color:#75715e>///
+</span><span style=color:#75715e>/// - `spec`: P{port}{pin}
+</span><span style=color:#75715e>///     - `port`: A, B
+</span><span style=color:#75715e>///     - `pin`: 0..31
+</span><span style=color:#75715e></span><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> parsePin(<span style=color:#66d9ef>comptime</span> spec<span style=color:#f92672>:</span> []<span style=color:#66d9ef>const</span> <span style=color:#66d9ef>u8</span>) <span style=color:#66d9ef>type</span> {
+    <span style=color:#66d9ef>const</span> invalid_format_msg <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;The given pin &#39;&#34;</span> <span style=color:#f92672>++</span> spec <span style=color:#f92672>++</span> <span style=color:#e6db74>&#34;&#39; has an invalid format. Pins must follow the format </span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74>P{Port}{Pin}</span><span style=color:#ae81ff>\&#34;</span><span style=color:#e6db74> scheme.&#34;</span>;
+
+    <span style=color:#66d9ef>if</span> (spec[<span style=color:#ae81ff>0</span>] <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#39;P&#39;</span>)
+        @compileError(invalid_format_msg);
+    <span style=color:#66d9ef>if</span> (spec[<span style=color:#ae81ff>1</span>] <span style=color:#f92672>&lt;</span> <span style=color:#e6db74>&#39;A&#39;</span> <span style=color:#66d9ef>or</span> spec[<span style=color:#ae81ff>1</span>] <span style=color:#f92672>&gt;</span> <span style=color:#e6db74>&#39;B&#39;</span>) <span style=color:#75715e>// J = 64 Pins; 2 Ports
+</span><span style=color:#75715e></span>        @compileError(<span style=color:#e6db74>&#34;Unknown port &#39;&#34;</span> <span style=color:#f92672>++</span> spec[<span style=color:#ae81ff>1</span>..<span style=color:#ae81ff>2</span>] <span style=color:#f92672>++</span> <span style=color:#e6db74>&#34;&#39;. Supported ports: A, B.&#34;</span>);
+
+    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>struct</span> {
+        <span style=color:#75715e>// Try to parse the given pin number as u5, i.e. a value in &#39;0&#39;..&#39;31&#39;.
+</span><span style=color:#75715e></span>        <span style=color:#66d9ef>const</span> pin_number<span style=color:#f92672>:</span> u5 <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;std&#34;</span>).fmt.parseInt(u5, spec[<span style=color:#ae81ff>2</span>..], <span style=color:#ae81ff>10</span>) <span style=color:#66d9ef>catch</span> @compileError(invalid_format_msg);
+        <span style=color:#66d9ef>const</span> pin_mask<span style=color:#f92672>:</span> <span style=color:#66d9ef>u32</span> <span style=color:#f92672>=</span> (<span style=color:#ae81ff>1</span> <span style=color:#f92672>&lt;&lt;</span> pin_number);
+        <span style=color:#75715e>// Port is either &#39;A&#39; or &#39;B&#39;.
+</span><span style=color:#75715e></span>        <span style=color:#66d9ef>const</span> port_number<span style=color:#f92672>:</span> <span style=color:#66d9ef>usize</span> <span style=color:#f92672>=</span> <span style=color:#66d9ef>if</span> (spec[<span style=color:#ae81ff>1</span>] <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;A&#39;</span>) <span style=color:#ae81ff>0</span> <span style=color:#66d9ef>else</span> <span style=color:#ae81ff>1</span>;
+        <span style=color:#66d9ef>const</span> gpio_port <span style=color:#f92672>=</span> @field(regs.PORT, <span style=color:#e6db74>&#34;GROUP&#34;</span>);
+    };
+}
+</code></pre></div><p>The <code>parsePin</code> function first checks that the specified port group and pin number are valid, and then returns a anonymous struct containing information about the pin. This includes a reference to the port, the port number, and a mask so we can set some pin-specific registers more easily. Now let&rsquo;s implement the required I/O functions to toggle the LED.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>// microzig/src/modules/chips/atsame51j20a/atsame51j20a.zig
+</span><span style=color:#75715e></span>
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> gpio <span style=color:#f92672>=</span> <span style=color:#66d9ef>struct</span> {
+    <span style=color:#75715e>// See SAM D5x/E5x Family Data Sheet page 807.
+</span><span style=color:#75715e></span>
+    <span style=color:#75715e>/// Configure the given pin as output with input disabled.
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> setOutput(<span style=color:#66d9ef>comptime</span> pin<span style=color:#f92672>:</span> <span style=color:#66d9ef>type</span>) <span style=color:#66d9ef>void</span> {
+        <span style=color:#75715e>// To use pin Pxy as an output, write bit y of the DIR register to &#39;1&#39;. This
+</span><span style=color:#75715e></span>        <span style=color:#75715e>// can also be done by writing bit y int the DIRSET register to &#39;1&#39; - this
+</span><span style=color:#75715e></span>        <span style=color:#75715e>// will avoid disturbing the configuration of other pins (datasheet p. 803).
+</span><span style=color:#75715e></span>        pin.gpio_port[pin.port_number].DIRSET <span style=color:#f92672>=</span> pin.pin_mask;
+        <span style=color:#75715e>// Disable input for the given pin.
+</span><span style=color:#75715e></span>        pin.gpio_port[pin.port_number].PINCFG[pin.pin_number].modify(.{.INEN <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>});
+    }
+
+    <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> write(<span style=color:#66d9ef>comptime</span> pin<span style=color:#f92672>:</span> <span style=color:#66d9ef>type</span>, state<span style=color:#f92672>:</span> micro.gpio.State) <span style=color:#66d9ef>void</span> {
+        <span style=color:#66d9ef>switch</span> (state) {
+            .high <span style=color:#f92672>=&gt;</span> pin.gpio_port[pin.port_number].OUTSET <span style=color:#f92672>=</span> pin.pin_mask,
+            .low <span style=color:#f92672>=&gt;</span> pin.gpio_port[pin.port_number].OUTCLR <span style=color:#f92672>=</span> pin.pin_mask,
+        }
+    }
+
+    <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> toggle(<span style=color:#66d9ef>comptime</span> pin<span style=color:#f92672>:</span> <span style=color:#66d9ef>type</span>) <span style=color:#66d9ef>void</span> {
+        pin.gpio_port[pin.port_number].OUTTGL <span style=color:#f92672>=</span> pin.pin_mask;
+    }
+};
+</code></pre></div><p>We define <code>setOutput</code> so we can configure the direction of a pin as output. One can configure the i&rsquo;th pin of a port group as output by setting bit i of <code>DIRSET</code> to <code>1</code>. The alternative would be to manipulate <code>DIR</code> directly but then you must be careful to maintain the state of the other pins.</p>
+<p>Setting a pin as high/ low is as easy as setting the i&rsquo;th pin of the <code>OUTSET</code>/ <code>OUTCLR</code> register to <code>1</code>. Like before you can also write to the <code>OUT</code> register directly. The <code>write</code> function takes a pin and a state (<code>.high</code> or <code>.low</code>) and writes to the associated register.</p>
+<p>Now let&rsquo;s define the chip itself as a public constant named <code>atsame51j20a</code> in <code>microchip/src/modules/chips.zig</code>.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>// microzig/src/modules/chips.zig
+</span><span style=color:#75715e></span>
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> atsame51j20a <span style=color:#f92672>=</span> Chip{
+    .name <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;ATSAME51J20A&#34;</span>,
+    .path <span style=color:#f92672>=</span> root_path <span style=color:#f92672>++</span> <span style=color:#e6db74>&#34;chips/atsame51j20a/atsame51j20a.zig&#34;</span>,
+    .cpu <span style=color:#f92672>=</span> cpus.cortex_m4,
+    .memory_regions <span style=color:#f92672>=</span> <span style=color:#f92672>&amp;</span>.{
+        <span style=color:#75715e>// SAM D5x/E5x Family Data Sheet page 53
+</span><span style=color:#75715e></span>        MemoryRegion{ .offset <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x00000000</span>, .length <span style=color:#f92672>=</span> <span style=color:#ae81ff>1024</span> <span style=color:#f92672>*</span> <span style=color:#ae81ff>1024</span>, .kind <span style=color:#f92672>=</span> .flash },
+        MemoryRegion{ .offset <span style=color:#f92672>=</span> <span style=color:#ae81ff>0x20000000</span>, .length <span style=color:#f92672>=</span> <span style=color:#ae81ff>256</span> <span style=color:#f92672>*</span> <span style=color:#ae81ff>1024</span>, .kind <span style=color:#f92672>=</span> .ram },
+    },
+};
+</code></pre></div><p>The definition includes the name of the chip, as well as the path to our <code>atsame51j20a.zig</code> file. As CPU we select <code>cortex_m4</code> so that Zig knows for which architecture an ATSAME51J20A program should be compiled. <code>cortex_m4</code> also defines, among other things, some CPU-specific startup code (clear the <code>.bss</code> section with zeroes, load the program from flash, &mldr;). The memory regions are taken from the data sheet of the ATSAME51J20A and tell Zig where the flash (the place where our program is stored on the chip) and ram are located.</p>
+<p>Now, the only thing left is our main function.</p>
+<h2 id=blinking-a-led>Blinking a LED</h2>
+<p>The remaining code to blink a LED is actually quite simple. Let&rsquo;s take a look and see how it works.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>const</span> micro <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;microzig&#34;</span>);
+
+<span style=color:#66d9ef>const</span> status_led_pin <span style=color:#f92672>=</span> micro.Pin(<span style=color:#e6db74>&#34;PA14&#34;</span>);
+
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> main() <span style=color:#66d9ef>void</span> {
+    <span style=color:#66d9ef>const</span> status_led <span style=color:#f92672>=</span> micro.Gpio(status_led_pin, .{
+        .mode <span style=color:#f92672>=</span> .output,
+        .initial_state <span style=color:#f92672>=</span> .high,
+    });
+    status_led.init();
+
+    <span style=color:#66d9ef>while</span> (<span style=color:#66d9ef>true</span>) {
+        busyloop();
+        status_led.toggle();
+    }
+}
+
+<span style=color:#66d9ef>fn</span> busyloop() <span style=color:#66d9ef>void</span> {
+    <span style=color:#66d9ef>const</span> limit <span style=color:#f92672>=</span> <span style=color:#ae81ff>5_000_000</span>;
+
+    <span style=color:#66d9ef>var</span> i<span style=color:#f92672>:</span> <span style=color:#66d9ef>u32</span> <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>;
+    <span style=color:#66d9ef>while</span> (i <span style=color:#f92672>&lt;</span> limit) <span style=color:#f92672>:</span> (i <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>) {
+        @import(<span style=color:#e6db74>&#34;std&#34;</span>).mem.doNotOptimizeAway(i);
+    }
+}
+</code></pre></div><p>At the top, we define a new <code>status_led_pin</code> (PA14) which is connected to the status LED of our board. The <code>Pin</code> function calls our <code>parsePin</code> function we defined earlier. Then we pass that pin to the <code>Gpio</code> function together with some options to set the pin as output with an initial state of high. The struct returned from <code>Gpio</code> is a wrapper that connects our <code>status_led_pin</code> to the GPIO functions we defined in <code>atsame51j20a.zig</code> but also offers additional functionality.</p>
+<p>To actually initialize our <code>status_led</code> we must call the <code>init</code> function on it which will indirectly call the <code>setOutput</code> and <code>write</code> function we defined.</p>
+<blockquote>
+<p><strong>Note</strong>: I&rsquo;d advice to read through <a href=https://github.com/ZigEmbeddedGroup/microzig/blob/main/src/core/gpio.zig><code>gpio.zig</code></a> and <a href=https://github.com/ZigEmbeddedGroup/microzig/blob/main/src/core/pin.zig><code>pin.zig</code></a> to get a better understanding on what&rsquo;s going on under the hood.</p>
+</blockquote>
+<p>The rest of the code is trivial. We define the main loop of our program which contains exactly two instructions. Each turn we wait for a short period of time by wasting CPU cycles using the <code>busyloop</code> function. After that we toggle the PIN, i.e. if the pin is high we set it to low and vice versa.</p>
+<h2 id=build-it>Build it</h2>
+<p>Building our project is quite easy.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>// build.zig
+</span><span style=color:#75715e></span>
+<span style=color:#66d9ef>const</span> std <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;std&#34;</span>);
+<span style=color:#66d9ef>const</span> microzig <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;libs/microzig/src/main.zig&#34;</span>);
+
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> build(b<span style=color:#f92672>:</span> <span style=color:#f92672>*</span>std.build.Builder) <span style=color:#66d9ef>void</span> {
+    <span style=color:#66d9ef>const</span> backing <span style=color:#f92672>=</span> .{
+        .chip <span style=color:#f92672>=</span> microzig.chips.atsame51j20a,
+    };
+
+    <span style=color:#66d9ef>const</span> exe <span style=color:#f92672>=</span> microzig.addEmbeddedExecutable(
+        b,
+        <span style=color:#e6db74>&#34;my-program&#34;</span>,
+        <span style=color:#e6db74>&#34;src/main.zig&#34;</span>,
+        backing,
+        .{
+            <span style=color:#75715e>// optional slice of packages that can be imported into your app:b
+</span><span style=color:#75715e></span>            <span style=color:#75715e>// .packages = &amp;my_packages,
+</span><span style=color:#75715e></span>        }
+    );
+
+    exe.inner.setBuildMode(.ReleaseSmall);
+    exe.inner.strip <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span>;
+    exe.inner.install();
+}
+</code></pre></div><p>We can leverage the <code>addEmbeddedExecutable</code> function of MicroZig to save us some work. All it takes is a backing (our chip), the name of our program, the path to our main function, and some optional packages to include.</p>
+<p>To build the executable just enter <code>zig build</code> on the command line. If everything goes well you can find your executable in <code>zig-out/bin/</code>.</p>
+<h2 id=flash-it>Flash it</h2>
+<p>I&rsquo;m going to use Microchip Studio to flash the device. Unfortunately, this tool is only available on Windows. As soon as I find a tool for Linux I&rsquo;ll update this post.</p>
+<p>Open Microchip Studio and connect the board to your Computer using a USB cable. Then press <code>Ctrl + Shift + P</code> to open the Device Programmer. Select your device and then press the Apply button. Open the Memories tab and press the <code>[...]</code> button of the Flash section to select your program located in <code>your-project/zig-out/bin</code>. Finally, press Program to flash your device.</p>
+<p><img src=/flashprogram.PNG alt="Flash program"></p>
+<p>After a few seconds, you should see a blinking LED next to the push button.</p>
+<p><img src=/blinkingled.jpg alt="Flash program"></p>
+</div>
+<div class=post-footer>
+</div>
+</article>
+</main>
+</body>
+</html>
