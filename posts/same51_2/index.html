@@ -1,0 +1,359 @@
+<!doctype html><html lang=en-us>
+<head>
+<title>SAM E51 Curiosity Nano programming with Zig #2 - UART // r4gus</title>
+<link rel="shortcut icon" href=/favicon.ico>
+<meta charset=utf-8>
+<meta name=generator content="Hugo 0.88.1">
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta name=author content="David P. Sugar">
+<meta name=description content="An introductory course on programming microcontroller based systems.">
+<link rel=stylesheet href=https://r4gus.github.io/css/main.min.88e7083eff65effb7485b6e6f38d10afbec25093a6fac42d734ce9024d3defbd.css>
+<meta name=twitter:card content="summary">
+<meta name=twitter:title content="SAM E51 Curiosity Nano programming with Zig #2 - UART">
+<meta name=twitter:description content="An introductory course on programming microcontroller based systems.">
+<meta property="og:title" content="SAM E51 Curiosity Nano programming with Zig #2 - UART">
+<meta property="og:description" content="An introductory course on programming microcontroller based systems.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://r4gus.github.io/posts/same51_2/"><meta property="article:section" content="posts">
+<meta property="article:published_time" content="2022-09-07T23:01:22+02:00">
+<meta property="article:modified_time" content="2022-09-08T01:39:52+02:00"><meta property="og:site_name" content="r4gus">
+</head>
+<body>
+<header class=app-header>
+<a href=https://r4gus.github.io/><img class=app-header-avatar src=/me.jpg alt="David P. Sugar"></a>
+<h1>r4gus</h1>
+<nav class=app-header-menu>
+<a class=app-header-menu-item href=/about>About</a>
+-
+<a class=app-header-menu-item href=/showcase>Showcase</a>
+</nav>
+<p>hic Rhodus, hic salta</p>
+<div class=app-header-social>
+<a href=https://github.com/r4gus target=_blank rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github"><title>My Github</title><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37.0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44.0 0020 4.77 5.07 5.07.0 0019.91 1S18.73.65 16 2.48a13.38 13.38.0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07.0 005 4.77 5.44 5.44.0 003.5 8.55c0 5.42 3.3 6.61 6.44 7A3.37 3.37.0 009 18.13V22"/></svg>
+</a>
+</div>
+</header>
+<main class=app-container>
+<article class=post>
+<header class=post-header>
+<h1 class=post-title>SAM E51 Curiosity Nano programming with Zig #2 - UART</h1>
+<div class=post-meta>
+<div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar"><title>calendar</title><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+Sep 7, 2022
+</div>
+<div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock"><title>clock</title><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+8 min read
+</div>
+<div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag"><title>tag</title><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83.0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+<a class=tag href=https://r4gus.github.io/tags/embedded/>embedded</a>
+<a class=tag href=https://r4gus.github.io/tags/atsame51j20a/>atsame51j20a</a>
+<a class=tag href=https://r4gus.github.io/tags/mcu/>mcu</a>
+<a class=tag href=https://r4gus.github.io/tags/uart/>uart</a>
+<a class=tag href=https://r4gus.github.io/tags/usart/>usart</a>
+<a class=tag href=https://r4gus.github.io/tags/serial/>serial</a>
+</div>
+</div>
+</header>
+<div class=post-content>
+<p>Last time we finished of by making the user LED of the Curiosity Nano board blink. In this post we&rsquo;re going to add (blocking) UART support to MicroZig, so we can interact with the board over a serial terminal.</p>
+<p>MicroZig defines a UART interface in <a href=https://github.com/ZigEmbeddedGroup/microzig/blob/main/src/core/uart.zig><code>src/core/uart.zig</code></a>. To use it for our chip we must define a <code>uart</code> struct that specifies the supported <code>DataBits</code> (bits send between the start and stop bit), number of <code>StopBits</code> and the <code>Parity</code> mode, aswell as a <code>Uart</code> function.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>// src/modules/chips/atsame51j20a/atsame51j20a.zig
+</span><span style=color:#75715e></span>
+<span style=color:#75715e>/// Unique definitions for the chip, used by the microzig.uart.Config struct.
+</span><span style=color:#75715e></span><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> uart <span style=color:#f92672>=</span> <span style=color:#66d9ef>struct</span> {
+    <span style=color:#75715e>/// USART character size (p. 859).
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> DataBits <span style=color:#f92672>=</span> <span style=color:#66d9ef>enum</span>(u3) {
+        eight <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>,
+        nine <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+        five <span style=color:#f92672>=</span> <span style=color:#ae81ff>5</span>,
+        six <span style=color:#f92672>=</span> <span style=color:#ae81ff>6</span>,
+        seven <span style=color:#f92672>=</span> <span style=color:#ae81ff>7</span>,
+    };
+
+    <span style=color:#75715e>/// USART stop bits (p. 859).
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> StopBits <span style=color:#f92672>=</span> <span style=color:#66d9ef>enum</span>(u1) {
+        one <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>,
+        tow <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+    };
+
+    <span style=color:#75715e>/// USART parity mode (p. 858).
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>const</span> Parity <span style=color:#f92672>=</span> <span style=color:#66d9ef>enum</span>(u1) {
+        even <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>,
+        odd <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+    };
+};
+</code></pre></div><p>The <code>Uart</code> function returns a anonymous struct containing a initialization function
+<code>init</code> and four other functions for sending and receiving data via UART.</p>
+<ul>
+<li><code>canWrite</code> - Checks if the DATA register is empty and ready to be written.</li>
+<li><code>tx</code> - Transmit one chunk of data by writing it into the DATA register.</li>
+<li><code>canRead</code> - Returns true if there is unread data in the DATA register.</li>
+<li><code>rx</code> - Read one chunk of received data.</li>
+</ul>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>// src/modules/chips/atsame51j20a/atsame51j20a.zig
+</span><span style=color:#75715e></span>
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> Uart(<span style=color:#66d9ef>comptime</span> index<span style=color:#f92672>:</span> <span style=color:#66d9ef>usize</span>, <span style=color:#66d9ef>comptime</span> pins<span style=color:#f92672>:</span> micro.uart.Pins) <span style=color:#66d9ef>type</span> {
+    <span style=color:#66d9ef>if</span> (pins.tx <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span> <span style=color:#66d9ef>or</span> pins.rx <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>)
+        @compileError(<span style=color:#e6db74>&#34;TODO: custom pins are not currently supported&#34;</span>);
+
+    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>struct</span> {
+        <span style=color:#66d9ef>const</span> UARTn <span style=color:#f92672>=</span> <span style=color:#66d9ef>switch</span> (index) {
+            <span style=color:#ae81ff>5</span> <span style=color:#f92672>=&gt;</span> regs.SERCOM5.USART_INT,
+            <span style=color:#66d9ef>else</span> <span style=color:#f92672>=&gt;</span> @compileError(<span style=color:#e6db74>&#34;Currently only SERCOM5:USART_INT supported.&#34;</span>),
+        };
+        <span style=color:#66d9ef>const</span> Self <span style=color:#f92672>=</span> @This();
+
+        <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> init(config<span style=color:#f92672>:</span> micro.uart.Config) <span style=color:#f92672>!</span>Self {
+            
+            <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>
+            <span style=color:#66d9ef>return</span> Self{};
+        }
+
+        <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> canWrite(self<span style=color:#f92672>:</span> Self) <span style=color:#66d9ef>bool</span> {
+            _ <span style=color:#f92672>=</span> self;
+            <span style=color:#75715e>// The DRE flag ist set when DATA is empty and ready to be written.
+</span><span style=color:#75715e></span>            <span style=color:#75715e>// The DATA register should only be written to when INTFLAG.DRE is set.
+</span><span style=color:#75715e></span>            <span style=color:#66d9ef>return</span> UARTn.INTFLAG.read().DRE <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span>;
+        }
+        <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> tx(self<span style=color:#f92672>:</span> Self, ch<span style=color:#f92672>:</span> <span style=color:#66d9ef>u8</span>) <span style=color:#66d9ef>void</span> {
+            <span style=color:#66d9ef>while</span> (<span style=color:#f92672>!</span>self.canWrite()) {} <span style=color:#75715e>// Wait for Previous transmission
+</span><span style=color:#75715e></span>            UARTn.DATA.<span style=color:#f92672>*</span> <span style=color:#f92672>=</span> ch; <span style=color:#75715e>// Load the data to be transmitted
+</span><span style=color:#75715e></span>        }
+
+        <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> canRead(self<span style=color:#f92672>:</span> Self) <span style=color:#66d9ef>bool</span> {
+            _ <span style=color:#f92672>=</span> self;
+            <span style=color:#75715e>// The RXC flag ist set when there are unread data in DATA.
+</span><span style=color:#75715e></span>            <span style=color:#66d9ef>return</span> UARTn.INTFLAG.read().RXC <span style=color:#f92672>==</span> <span style=color:#ae81ff>1</span>;
+        }
+        <span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> rx(self<span style=color:#f92672>:</span> Self) <span style=color:#66d9ef>u8</span> {
+            _ <span style=color:#f92672>=</span> self;
+            <span style=color:#66d9ef>while</span> (<span style=color:#f92672>!</span>self.canRead()) {} <span style=color:#75715e>// Wait till the data is received
+</span><span style=color:#75715e></span>            <span style=color:#66d9ef>return</span> @intCast(<span style=color:#66d9ef>u8</span>, UARTn.DATA.<span style=color:#f92672>*</span>); <span style=color:#75715e>// Read received data
+</span><span style=color:#75715e></span>        }
+    };
+}
+</code></pre></div><p>The onboard debugger of the Curiosity Nano includes a virtual COM port interface
+ovar UART, using <code>PB16</code> (TX) and <code>PB17</code> (RX). By looking at the data sheet on
+page 34 (I/O Multiplexing and Considerations) we see that both pins are connected
+to <code>SERCOM5</code> (peripheral function C). For now, lets only support UART on SERCOM5.</p>
+<p><img src=/iomux.png alt="I/O Multiplexing"></p>
+<p>The functions <code>canWrite</code>, <code>tx</code>, <code>canRead</code> and <code>rx</code> should be pretty self explainatory
+but <code>init</code> is a little bit more complex.</p>
+<h2 id=clock-distribution>Clock distribution</h2>
+<p>For SERCOM5 to work we need a clock source to drive it. The chip we use gives us
+a variety of options, including the external crystal oscillator XOSC0 and XOSC1.
+We&rsquo;re going to use the Digital Frequency Locked Loop (DFLL48M), which is also the
+default clock for generating GCLK_MAIN after startup.</p>
+<p>To clock SERCOM5 we use the Generic Clock Generator 2 (GCLK2) and select DFLL48M as
+its source.</p>
+<blockquote>
+<p>A Generic Clock Generator is a programmable prescaler that can use any of the
+system clock sources as a time base (data sheet p. 136).</p>
+</blockquote>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> gclk2Init() <span style=color:#66d9ef>void</span> {
+    regs.GCLK.GENCTRL[<span style=color:#ae81ff>2</span>].modify(.{
+        .DIV <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
+        .SRC <span style=color:#f92672>=</span> <span style=color:#ae81ff>6</span>, <span style=color:#75715e>// DFLL48M generator clock source
+</span><span style=color:#75715e></span>        .GENEN <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, <span style=color:#75715e>// Enable generator
+</span><span style=color:#75715e></span>    });
+
+    <span style=color:#66d9ef>while</span> (regs.GCLK.SYNCBUSY.read().GENCTRL <span style=color:#f92672>&amp;</span> <span style=color:#ae81ff>2</span> <span style=color:#f92672>!=</span> <span style=color:#ae81ff>0</span>) {
+        <span style=color:#75715e>// wait for sync
+</span><span style=color:#75715e></span>    }
+}
+</code></pre></div><p>After setting up GCLK2, we feed its Generic Clock into Peripheral Channel 35
+(SERCOM5 Core) which is connected to SERCOM5. The SERCOM5 interface is clocked
+by CLK_SERCOM5_APB, so we need to set <code>SERCOM5_</code> in the <code>APBDMASK</code> register to
+<code>1</code>, otherwise the interface registers can&rsquo;t be read or written.</p>
+<p><img src=/gclk2sercom5.png alt="Setup clock for SERCOM5"></p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> init(config<span style=color:#f92672>:</span> micro.uart.Config) <span style=color:#f92672>!</span>Self {
+    <span style=color:#66d9ef>switch</span> (index) {
+        <span style=color:#ae81ff>5</span> <span style=color:#f92672>=&gt;</span> {
+            gclk2Init();
+
+            regs.GCLK.PCHCTRL[<span style=color:#ae81ff>35</span>].modify(.{
+                .GEN <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span>, <span style=color:#75715e>// Generic clock generator 2 (see p. 156)
+</span><span style=color:#75715e></span>                .CHEN <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, <span style=color:#75715e>// Enable peripheral channel
+</span><span style=color:#75715e></span>            });
+
+            <span style=color:#75715e>// When the APB clock is not provided to a module, its
+</span><span style=color:#75715e></span>            <span style=color:#75715e>// registers cannot be read or written.
+</span><span style=color:#75715e></span>            regs.MCLK.APBDMASK.modify(.{ .SERCOM5_ <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span> });
+
+            <span style=color:#75715e>// Enable the peripheral multiplexer selection.
+</span><span style=color:#75715e></span>            regs.PORT.GROUP[<span style=color:#ae81ff>1</span>].PINCFG[<span style=color:#ae81ff>16</span>].modify(.{ .PMUXEN <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span> });
+            regs.PORT.GROUP[<span style=color:#ae81ff>1</span>].PINCFG[<span style=color:#ae81ff>17</span>].modify(.{ .PMUXEN <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span> });
+
+            <span style=color:#75715e>// Multiplex PB16 and PB17 to peripheral function C, i.e.
+</span><span style=color:#75715e></span>            <span style=color:#75715e>// SERCOM5 (see page 32 and 823).
+</span><span style=color:#75715e></span>            regs.PORT.GROUP[<span style=color:#ae81ff>1</span>].PMUX[<span style=color:#ae81ff>8</span>].modify(.{ .PMUXE <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span>, .PMUXO <span style=color:#f92672>=</span> <span style=color:#ae81ff>2</span> });
+        },
+        <span style=color:#66d9ef>else</span> <span style=color:#f92672>=&gt;</span> <span style=color:#66d9ef>unreachable</span>,
+    } 
+
+    <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>
+    <span style=color:#66d9ef>return</span> Self{};
+}
+</code></pre></div><p>As you can see we also enable peripheral multiplexing for <code>PB16</code> and <code>PB17</code>. This
+means in general that the pins are now controlled by SERCOM5.</p>
+<h2 id=configure-usart>Configure USART</h2>
+<p>After configuring the clock and pins, the last thing that remains is initializing
+USART on SERCOM5 correctly (data sheet p. 837 - 34.6.2.1).</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> init(config<span style=color:#f92672>:</span> micro.uart.Config) <span style=color:#f92672>!</span>Self {
+    <span style=color:#66d9ef>switch</span> (index) {
+
+    <span style=color:#75715e>// ...
+</span><span style=color:#75715e></span>
+    <span style=color:#75715e>// Some of the registers are enable-protected, meaning they can only
+</span><span style=color:#75715e></span>    <span style=color:#75715e>// be written when the USART is disabled.
+</span><span style=color:#75715e></span>    UARTn.CTRLA.modify(.{ .ENABLE <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span> });
+
+    <span style=color:#75715e>// Wait until synchronized.
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>while</span> (UARTn.SYNCBUSY.read().ENABLE <span style=color:#f92672>!=</span> <span style=color:#ae81ff>0</span>) {}
+
+    <span style=color:#75715e>// Select USART with internal clock (0x1).
+</span><span style=color:#75715e></span>    UARTn.CTRLA.modify(.{
+        .MODE <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, <span style=color:#75715e>// Select USART with internal clock (0x01)
+</span><span style=color:#75715e></span>        .CMODE <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, <span style=color:#75715e>// Select asynchronous communication mode (0x00)
+</span><span style=color:#75715e></span>        <span style=color:#75715e>// Pin selection (data sheet p. 854)
+</span><span style=color:#75715e></span>        .RXPO <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, <span style=color:#75715e>// SERCOM PAD[1] is used for data reception
+</span><span style=color:#75715e></span>        .TXPO <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, <span style=color:#75715e>// SERCOM PAD[0] is used for data transmition
+</span><span style=color:#75715e></span>        .DORD <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, <span style=color:#75715e>// Configure data order (MSB = 0, LSB = 1)
+</span><span style=color:#75715e></span>        .IBON <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, <span style=color:#75715e>// Immediate buffer overflow notification
+</span><span style=color:#75715e></span>        .SAMPR <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>, <span style=color:#75715e>// 16x over-sampling using arithmetic baud rate generation
+</span><span style=color:#75715e></span>    });
+
+    <span style=color:#75715e>// Configure parity mode.
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>if</span> (config.parity <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>) {
+        <span style=color:#75715e>// Enable parity mode.
+</span><span style=color:#75715e></span>        UARTn.CTRLA.modify(.{ .FORM <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span> }); <span style=color:#75715e>// USART frame with parity
+</span><span style=color:#75715e></span>        UARTn.CTRLB.modify(.{ .PMODE <span style=color:#f92672>=</span> @enumToInt(config.parity.<span style=color:#f92672>?</span>) });
+    } <span style=color:#66d9ef>else</span> {
+        <span style=color:#75715e>// Disable parity mode.
+</span><span style=color:#75715e></span>        UARTn.CTRLA.modify(.{ .FORM <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span> }); <span style=color:#75715e>// USART frame
+</span><span style=color:#75715e></span>    }
+
+    <span style=color:#75715e>// Write the Baud register (internal clock mode) to generate the
+</span><span style=color:#75715e></span>    <span style=color:#75715e>// desired baud rate.
+</span><span style=color:#75715e></span>    UARTn.BAUD.<span style=color:#f92672>*</span> <span style=color:#f92672>=</span> asyncArithmeticBaudToRegister(config.baud_rate, <span style=color:#ae81ff>48_000_000</span>);     
+
+    UARTn.CTRLB.modify(.{
+        .CHSIZE <span style=color:#f92672>=</span> @enumToInt(config.data_bits), <span style=color:#75715e>// Configure the character size filed.
+</span><span style=color:#75715e></span>        .SBMODE <span style=color:#f92672>=</span> @enumToInt(config.stop_bits), <span style=color:#75715e>// Configure the number of stop bits.
+</span><span style=color:#75715e></span>        .RXEN <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, <span style=color:#75715e>// Enable the receiver
+</span><span style=color:#75715e></span>        .TXEN <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>, <span style=color:#75715e>// Enable the transmitter
+</span><span style=color:#75715e></span>    });
+
+    <span style=color:#66d9ef>while</span> (UARTn.SYNCBUSY.raw <span style=color:#f92672>!=</span> <span style=color:#ae81ff>0</span>) {}
+
+    <span style=color:#75715e>// Enable the peripheral.
+</span><span style=color:#75715e></span>    UARTn.CTRLA.modify(.{ .ENABLE <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span> });
+    <span style=color:#66d9ef>while</span> (UARTn.SYNCBUSY.raw <span style=color:#f92672>!=</span> <span style=color:#ae81ff>0</span>) {}
+
+    <span style=color:#66d9ef>return</span> Self{};
+}
+</code></pre></div><p>The baud-rate generator generates internal clocks for a asynchronous and synchronous
+communication. The output frequency (fBAUD) is determined by the Baud register
+(BAUD) setting and the baud reference frequency (fref). The baud reference clock
+is the serial engine clock, and it can be internal or external (data sheet p. 830).</p>
+<ul>
+<li><code>fBAUD</code> - The expected baud rate (e.g. 115200)</li>
+<li><code>fref</code> - The reference frequency (48MHz in our case)</li>
+</ul>
+<p>To calculate the required <code>BAUD</code> value based on <code>fBAUD</code> and <code>fref</code> we can use the
+formula $BAUD = 65536 * (1 - 16 * (fBAUD / fref))$.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>/// Calculate the BAUD register value based on the the expected output frequency
+</span><span style=color:#75715e>/// `fbaud` and the baud reference frequency `fref` (see data sheet p. 830).
+</span><span style=color:#75715e></span><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> asyncArithmeticBaudToRegister(fbaud<span style=color:#f92672>:</span> <span style=color:#66d9ef>u32</span>, fref<span style=color:#f92672>:</span> <span style=color:#66d9ef>u32</span>) <span style=color:#66d9ef>u16</span> {
+    <span style=color:#66d9ef>const</span> fb <span style=color:#f92672>=</span> @intToFloat(<span style=color:#66d9ef>f64</span>, fbaud);
+    <span style=color:#66d9ef>const</span> fr <span style=color:#f92672>=</span> @intToFloat(<span style=color:#66d9ef>f64</span>, fref);
+    <span style=color:#66d9ef>const</span> res <span style=color:#f92672>=</span> <span style=color:#ae81ff>65536.0</span> <span style=color:#f92672>*</span> (<span style=color:#ae81ff>1.0</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>16.0</span> <span style=color:#f92672>*</span> (fb <span style=color:#f92672>/</span> fr));
+
+    <span style=color:#66d9ef>return</span> @floatToInt(<span style=color:#66d9ef>u16</span>, res);
+}
+</code></pre></div><p>and that&rsquo;s it.</p>
+<h2 id=serial-communication>Serial Communication</h2>
+<p>To setup UART over SERCOM5 within our <code>main</code> function we call <code>Uart</code> passing
+it <code>5</code> as the index and then call the <code>init</code> function on it. As options we select
+a baud rate of 115200, one stop bit, no parity bit and eight data bits.</p>
+<p>By calling the <code>writer</code> function on <code>uart</code> we get a <code>std.io.Writer</code> we can
+use as usual.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>const</span> micro <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;microzig&#34;</span>);
+
+<span style=color:#66d9ef>const</span> status_led_pin <span style=color:#f92672>=</span> micro.Pin(<span style=color:#e6db74>&#34;PA14&#34;</span>);
+
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> main() <span style=color:#f92672>!</span><span style=color:#66d9ef>void</span> {
+    <span style=color:#66d9ef>const</span> status_led <span style=color:#f92672>=</span> micro.Gpio(status_led_pin, .{
+        .mode <span style=color:#f92672>=</span> .output,
+        .initial_state <span style=color:#f92672>=</span> .low,
+    });
+    status_led.init();
+
+    <span style=color:#66d9ef>var</span> uart <span style=color:#f92672>=</span> micro.Uart(<span style=color:#ae81ff>5</span>, .{ .tx <span style=color:#f92672>=</span> <span style=color:#66d9ef>null</span>, .rx <span style=color:#f92672>=</span> <span style=color:#66d9ef>null</span> }).init(.{
+        .baud_rate <span style=color:#f92672>=</span> <span style=color:#ae81ff>115200</span>,
+        .stop_bits <span style=color:#f92672>=</span> .one,
+        .parity <span style=color:#f92672>=</span> <span style=color:#66d9ef>null</span>,
+        .data_bits <span style=color:#f92672>=</span> .eight,
+    }) <span style=color:#66d9ef>catch</span> <span style=color:#f92672>|</span>err<span style=color:#f92672>|</span> {
+        blinkError(status_led, err);
+
+        micro.hang();
+    };
+
+    <span style=color:#66d9ef>var</span> out <span style=color:#f92672>=</span> uart.writer();
+
+    <span style=color:#66d9ef>while</span> (<span style=color:#66d9ef>true</span>) {
+        busyloop();
+        status_led.toggle();
+        <span style=color:#66d9ef>try</span> out.writeAll(<span style=color:#e6db74>&#34;Hello, MicroZig!</span><span style=color:#ae81ff>\n\r</span><span style=color:#e6db74>&#34;</span>);
+    }
+}
+
+<span style=color:#66d9ef>fn</span> blinkError(led<span style=color:#f92672>:</span> anytype, err<span style=color:#f92672>:</span> micro.uart.InitError) <span style=color:#66d9ef>void</span> {
+    <span style=color:#66d9ef>var</span> blinks<span style=color:#f92672>:</span> u3 <span style=color:#f92672>=</span>
+        <span style=color:#66d9ef>switch</span> (err) {
+        <span style=color:#66d9ef>error</span>.UnsupportedBaudRate <span style=color:#f92672>=&gt;</span> <span style=color:#ae81ff>1</span>,
+        <span style=color:#66d9ef>error</span>.UnsupportedParity <span style=color:#f92672>=&gt;</span> <span style=color:#ae81ff>2</span>,
+        <span style=color:#66d9ef>error</span>.UnsupportedStopBitCount <span style=color:#f92672>=&gt;</span> <span style=color:#ae81ff>3</span>,
+        <span style=color:#66d9ef>error</span>.UnsupportedWordSize <span style=color:#f92672>=&gt;</span> <span style=color:#ae81ff>4</span>,
+    };
+
+    <span style=color:#66d9ef>while</span> (blinks <span style=color:#f92672>&gt;</span> <span style=color:#ae81ff>0</span>) <span style=color:#f92672>:</span> (blinks <span style=color:#f92672>-=</span> <span style=color:#ae81ff>1</span>) {
+        led.toggle();
+        micro.debug.busySleep(<span style=color:#ae81ff>1_000_000</span>);
+        led.toggle();
+        micro.debug.busySleep(<span style=color:#ae81ff>1_000_000</span>);
+    }
+}
+
+<span style=color:#66d9ef>fn</span> busyloop() <span style=color:#66d9ef>void</span> {
+    <span style=color:#66d9ef>const</span> limit <span style=color:#f92672>=</span> <span style=color:#ae81ff>6_000_000</span>;
+
+    <span style=color:#66d9ef>var</span> i<span style=color:#f92672>:</span> <span style=color:#66d9ef>u32</span> <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>;
+    <span style=color:#66d9ef>while</span> (i <span style=color:#f92672>&lt;</span> limit) <span style=color:#f92672>:</span> (i <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>) {
+        @import(<span style=color:#e6db74>&#34;std&#34;</span>).mem.doNotOptimizeAway(i);
+    }
+}
+</code></pre></div><p>If you connect to the board using a serial communication tool (e.g. GTKterm)
+you should see the string <em>Hello, MicroZig!</em> displayed on the screen.</p>
+<p><img src=/hellomicrozig.png alt=Terminal></p>
+<h2 id=known-issues>Known issues</h2>
+<ul>
+<li>
+<p>Regz might add too much padding after PORT 0, so make sure that the padding
+is exactly 0x20. Otherwise you won&rsquo;t be able to configure <code>PB16</code> and <code>PB17</code>
+correctly (that gave me some headaches).</p>
+</li>
+<li>
+<p>When a terminal connects on the host, it must assert the DTR signal.</p>
+</li>
+</ul>
+</div>
+<div class=post-footer>
+</div>
+</article>
+</main>
+</body>
+</html>
