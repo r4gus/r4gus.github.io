@@ -16,7 +16,7 @@
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://r4gus.github.io/posts/same51_2/"><meta property="article:section" content="posts">
 <meta property="article:published_time" content="2022-09-07T23:01:22+02:00">
-<meta property="article:modified_time" content="2022-09-08T01:39:52+02:00"><meta property="og:site_name" content="r4gus">
+<meta property="article:modified_time" content="2022-09-08T02:17:13+02:00"><meta property="og:site_name" content="r4gus">
 </head>
 <body>
 <header class=app-header>
@@ -55,8 +55,8 @@ Sep 7, 2022
 </div>
 </header>
 <div class=post-content>
-<p>Last time we finished of by making the user LED of the Curiosity Nano board blink. In this post we&rsquo;re going to add (blocking) UART support to MicroZig, so we can interact with the board over a serial terminal.</p>
-<p>MicroZig defines a UART interface in <a href=https://github.com/ZigEmbeddedGroup/microzig/blob/main/src/core/uart.zig><code>src/core/uart.zig</code></a>. To use it for our chip we must define a <code>uart</code> struct that specifies the supported <code>DataBits</code> (bits send between the start and stop bit), number of <code>StopBits</code> and the <code>Parity</code> mode, aswell as a <code>Uart</code> function.</p>
+<p>Last time we made the user LED of the Curiosity Nano board blink. In this post we&rsquo;re going to add (blocking) UART support to MicroZig, so we can interact with the board over a serial terminal.</p>
+<p>MicroZig defines a UART interface in <a href=https://github.com/ZigEmbeddedGroup/microzig/blob/main/src/core/uart.zig><code>src/core/uart.zig</code></a>. To use it for our chip we must define a <code>uart</code> struct that specifies the supported <code>DataBits</code> (bits send between the start and stop bit), the number of <code>StopBits</code> and the <code>Parity</code> mode, as well as a <code>Uart</code> function.</p>
 <div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#75715e>// src/modules/chips/atsame51j20a/atsame51j20a.zig
 </span><span style=color:#75715e></span>
 <span style=color:#75715e>/// Unique definitions for the chip, used by the microzig.uart.Config struct.
@@ -82,7 +82,7 @@ Sep 7, 2022
         odd <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>,
     };
 };
-</code></pre></div><p>The <code>Uart</code> function returns a anonymous struct containing a initialization function
+</code></pre></div><p>The <code>Uart</code> function returns an anonymous struct containing an initialization function
 <code>init</code> and four other functions for sending and receiving data via UART.</p>
 <ul>
 <li><code>canWrite</code> - Checks if the DATA register is empty and ready to be written.</li>
@@ -134,11 +134,11 @@ Sep 7, 2022
     };
 }
 </code></pre></div><p>The onboard debugger of the Curiosity Nano includes a virtual COM port interface
-ovar UART, using <code>PB16</code> (TX) and <code>PB17</code> (RX). By looking at the data sheet on
+over UART, using <code>PB16</code> (TX) and <code>PB17</code> (RX). By looking at the datasheet on
 page 34 (I/O Multiplexing and Considerations) we see that both pins are connected
-to <code>SERCOM5</code> (peripheral function C). For now, lets only support UART on SERCOM5.</p>
+to <code>SERCOM5</code> (peripheral function C). For now, let&rsquo;s only support UART on SERCOM5.</p>
 <p><img src=/iomux.png alt="I/O Multiplexing"></p>
-<p>The functions <code>canWrite</code>, <code>tx</code>, <code>canRead</code> and <code>rx</code> should be pretty self explainatory
+<p>The functions <code>canWrite</code>, <code>tx</code>, <code>canRead</code> and <code>rx</code> should be pretty self-explanatory
 but <code>init</code> is a little bit more complex.</p>
 <h2 id=clock-distribution>Clock distribution</h2>
 <p>For SERCOM5 to work we need a clock source to drive it. The chip we use gives us
@@ -165,7 +165,7 @@ system clock sources as a time base (data sheet p. 136).</p>
 </code></pre></div><p>After setting up GCLK2, we feed its Generic Clock into Peripheral Channel 35
 (SERCOM5 Core) which is connected to SERCOM5. The SERCOM5 interface is clocked
 by CLK_SERCOM5_APB, so we need to set <code>SERCOM5_</code> in the <code>APBDMASK</code> register to
-<code>1</code>, otherwise the interface registers can&rsquo;t be read or written.</p>
+<code>1</code>, otherwise, the interface registers can&rsquo;t be read or written.</p>
 <p><img src=/gclk2sercom5.png alt="Setup clock for SERCOM5"></p>
 <div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> init(config<span style=color:#f92672>:</span> micro.uart.Config) <span style=color:#f92672>!</span>Self {
     <span style=color:#66d9ef>switch</span> (index) {
@@ -254,7 +254,7 @@ USART on SERCOM5 correctly (data sheet p. 837 - 34.6.2.1).</p>
 
     <span style=color:#66d9ef>return</span> Self{};
 }
-</code></pre></div><p>The baud-rate generator generates internal clocks for a asynchronous and synchronous
+</code></pre></div><p>The baud-rate generator generates internal clocks for asynchronous and synchronous
 communication. The output frequency (fBAUD) is determined by the Baud register
 (BAUD) setting and the baud reference frequency (fref). The baud reference clock
 is the serial engine clock, and it can be internal or external (data sheet p. 830).</p>
@@ -275,9 +275,9 @@ formula $BAUD = 65536 * (1 - 16 * (fBAUD / fref))$.</p>
 }
 </code></pre></div><p>and that&rsquo;s it.</p>
 <h2 id=serial-communication>Serial Communication</h2>
-<p>To setup UART over SERCOM5 within our <code>main</code> function we call <code>Uart</code> passing
-it <code>5</code> as the index and then call the <code>init</code> function on it. As options we select
-a baud rate of 115200, one stop bit, no parity bit and eight data bits.</p>
+<p>To set up UART over SERCOM5 within our <code>main</code> function we call <code>Uart</code> passing
+it <code>5</code> as the index and then call the <code>init</code> function on it. As options, we select
+a baud rate of 115200, one stop bit, no parity bit, and eight data bits.</p>
 <p>By calling the <code>writer</code> function on <code>uart</code> we get a <code>std.io.Writer</code> we can
 use as usual.</p>
 <div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>const</span> micro <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;microzig&#34;</span>);
@@ -350,6 +350,46 @@ correctly (that gave me some headaches).</p>
 <p>When a terminal connects on the host, it must assert the DTR signal.</p>
 </li>
 </ul>
+<h2 id=build>Build</h2>
+<p>If you&rsquo;ve installed <a href=https://github.com/ataradov/edbg>edbg</a> you can use the
+following build file to program the Curiosity Nano using the <code>zig build edbg</code> command.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-zig data-lang=zig><span style=color:#66d9ef>const</span> std <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;std&#34;</span>);
+<span style=color:#66d9ef>const</span> microzig <span style=color:#f92672>=</span> @import(<span style=color:#e6db74>&#34;libs/microzig/src/main.zig&#34;</span>);
+
+<span style=color:#66d9ef>pub</span> <span style=color:#66d9ef>fn</span> build(b<span style=color:#f92672>:</span> <span style=color:#f92672>*</span>std.build.Builder) <span style=color:#66d9ef>void</span> {
+    <span style=color:#66d9ef>const</span> backing <span style=color:#f92672>=</span> .{
+        .chip <span style=color:#f92672>=</span> microzig.chips.atsame51j20a,
+    };
+
+    <span style=color:#66d9ef>var</span> exe <span style=color:#f92672>=</span> microzig.addEmbeddedExecutable(b, <span style=color:#e6db74>&#34;zig-ctap&#34;</span>, <span style=color:#e6db74>&#34;src/main.zig&#34;</span>, backing, .{
+        <span style=color:#75715e>// optional slice of packages that can be imported into your app:b
+</span><span style=color:#75715e></span>        <span style=color:#75715e>// .packages = &amp;my_packages,
+</span><span style=color:#75715e></span>    });
+
+    exe.setBuildMode(.ReleaseSmall);
+    exe.inner.strip <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span>;
+    exe.install();
+
+    <span style=color:#75715e>// ########################################################################
+</span><span style=color:#75715e></span>    <span style=color:#75715e>// Use `zig build edbg` to:
+</span><span style=color:#75715e></span>    <span style=color:#75715e>//   1. build the raw binary
+</span><span style=color:#75715e></span>    <span style=color:#75715e>//   2. program the device using edbg (Microchip SAM)
+</span><span style=color:#75715e></span>    <span style=color:#75715e>// ########################################################################
+</span><span style=color:#75715e></span>
+    <span style=color:#66d9ef>const</span> bin <span style=color:#f92672>=</span> exe.installRaw(<span style=color:#e6db74>&#34;firmware.bin&#34;</span>, .{});
+
+    <span style=color:#66d9ef>const</span> edbg <span style=color:#f92672>=</span> b.addSystemCommand(<span style=color:#f92672>&amp;</span>[_][]<span style=color:#66d9ef>const</span> <span style=color:#66d9ef>u8</span>{
+        <span style=color:#e6db74>&#34;sudo&#34;</span>, <span style=color:#e6db74>&#34;edbg&#34;</span>, <span style=color:#e6db74>&#34;-b&#34;</span>, <span style=color:#e6db74>&#34;-t&#34;</span>, <span style=color:#e6db74>&#34;same51&#34;</span>, <span style=color:#e6db74>&#34;-pv&#34;</span>, <span style=color:#e6db74>&#34;-f&#34;</span>, <span style=color:#e6db74>&#34;zig-out/bin/firmware.bin&#34;</span>,
+    });
+    edbg.step.dependOn(<span style=color:#f92672>&amp;</span>bin.step);
+
+    <span style=color:#66d9ef>const</span> program_step <span style=color:#f92672>=</span> b.step(<span style=color:#e6db74>&#34;edbg&#34;</span>, <span style=color:#e6db74>&#34;Program the chip using edbg&#34;</span>);
+    program_step.dependOn(<span style=color:#f92672>&amp;</span>edbg.step);
+}
+</code></pre></div><blockquote>
+<p><strong>Note:</strong> The <code>build</code> function uses some wrapper functions from the MicroZig
+pull request <a href=https://github.com/ZigEmbeddedGroup/microzig/pull/77>#77</a>.</p>
+</blockquote>
 </div>
 <div class=post-footer>
 </div>
