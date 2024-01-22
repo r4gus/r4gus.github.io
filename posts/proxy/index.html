@@ -1,0 +1,124 @@
+<!doctype html><html lang=en-us>
+<head>
+<title>HTTP/2 Reverse Proxy using Apache // r4gus</title>
+<link rel="shortcut icon" href=/favicon.ico>
+<meta charset=utf-8>
+<meta name=generator content="Hugo 0.88.1">
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta name=author content="David P. Sugar">
+<meta name=description content="How to setup a reverse proxy using Apache">
+<link rel=stylesheet href=/css/main.min.9e9c6027c30f5aa9423b581bd9cddd1ddc66088adb9c2604f89eb5828efea5a1.css>
+<meta name=twitter:card content="summary">
+<meta name=twitter:title content="HTTP/2 Reverse Proxy using Apache">
+<meta name=twitter:description content="How to setup a reverse proxy using Apache">
+<meta property="og:title" content="HTTP/2 Reverse Proxy using Apache">
+<meta property="og:description" content="How to setup a reverse proxy using Apache">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://r4gus.github.io/posts/proxy/"><meta property="article:section" content="posts">
+<meta property="article:published_time" content="2024-01-22T23:45:00+01:00">
+<meta property="article:modified_time" content="2024-01-22T23:48:54+01:00"><meta property="og:site_name" content="r4gus">
+</head>
+<body>
+<header class=app-header>
+<a href=https://r4gus.github.io/><img class=app-header-avatar src=/me.jpg alt="David P. Sugar"></a>
+<span class=app-header-title>r4gus</span>
+<nav class=app-header-menu>
+<a class=app-header-menu-item href=/about>About</a>
+-
+<a class=app-header-menu-item href=/showcase>Showcase</a>
+</nav>
+<p>Tech blog with an focus on programming and cyber security</p>
+<div class=app-header-social>
+<a href=https://github.com/r4gus target=_blank rel="noreferrer noopener me"><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github"><title>My Github</title><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37.0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44.0 0020 4.77 5.07 5.07.0 0019.91 1S18.73.65 16 2.48a13.38 13.38.0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07.0 005 4.77 5.44 5.44.0 003.5 8.55c0 5.42 3.3 6.61 6.44 7A3.37 3.37.0 009 18.13V22"/></svg>
+</a>
+</div>
+</header>
+<main class=app-container>
+<article class=post>
+<header class=post-header>
+<h1 class=post-title>HTTP/2 Reverse Proxy using Apache</h1>
+<div class=post-meta>
+<div><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar"><title>calendar</title><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+Jan 22, 2024
+</div>
+<div><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock"><title>clock</title><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+3 min read
+</div>
+<div><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag"><title>tag</title><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83.0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+<a class=tag href=https://r4gus.github.io/tags/apache/>apache</a>
+<a class=tag href=https://r4gus.github.io/tags/reverse-proxy/>reverse-proxy</a>
+<a class=tag href=https://r4gus.github.io/tags/proxy/>proxy</a>
+</div>
+</div>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/contrib/auto-render.min.js onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}]})})</script>
+</header>
+<div class=post-content>
+<p>This is a short tutorial on how to configure a reverse-proxy using apache, that translates <code>http/1.1</code> requests into <code>http/2</code> requests.</p>
+<p>Imagine you have a server that only supports <code>http/2</code> but a client that wants to connect to the server supports only <code>http/1.1</code>. In such a case it would be handy to have some kind of mechanism that translates between client and server. A reverse proxy. For this tutorial we are going to configure a Apache web-server on Ubuntu 22.04 that acts as a reverse proxy to exchange messages between a <code>http/2</code> server and and <code>http/1.1</code> client.</p>
+<h2 id=1-install-apache-on-ubuntu-2204>1. Install Apache on Ubuntu 22.04</h2>
+<p>Runt the following commands to install the Apache web-server on your system:</p>
+<pre tabindex=0><code>sudo apt update &amp;&amp; sudo apt upgrade &amp;&amp; sudo apt install apache2
+sudo systemctl enable apache2
+sudo systemctl start apache2
+</code></pre><p>You can verify the status of Apache using <code>systemctl status apache2</code>.</p>
+<blockquote>
+<p>NOTE: If you get an error when restarting apache2, try to comment out <code>Listen 80</code> in <code>/etc/apache2/ports.conf</code>. The Apache server will not start if one of the ports in <code>/etc/apache2/ports.conf</code> is already bound by another process.</p>
+</blockquote>
+<h2 id=2-enable-apache-modules>2. Enable Apache Modules</h2>
+<p>Next wee need to enable some Apache modules required for the reverse-proxy.</p>
+<pre tabindex=0><code>sudo a2enmod proxy proxy_http proxy_http2
+</code></pre><p>After you&rsquo;ve enabled the required modules, you must restart the Apache server so the changes can take effect.</p>
+<pre tabindex=0><code>sudo systemctl restart apache2
+</code></pre><p>To check which modules have been loaded, run <code>sudo apachectl -M</code>.</p>
+<h2 id=3-disable-default-configuration>3. Disable default configuration</h2>
+<p>Next we need to disable the default configuration. Otherwise, you will only get a default HTML site when connecting to the Apache server.</p>
+<pre tabindex=0><code>sudo a2dissite 000-default.conf
+</code></pre><h2 id=4-create-a-reverse-proxy-configuration>4. Create a reverse-proxy configuration</h2>
+<p>Create a new file <code>/etc/apache2/sites-available/reverse_proxy.conf</code> and add the following:</p>
+<pre tabindex=0><code>LoadModule http2_module modules/mod_http2.so
+
+&lt;VirtualHost *:8080&gt;
+    #ProxyPreserveHost On
+    
+    ProxyPass / &quot;h2c://192.168.56.2:7777/&quot;
+    ProxyPassReverse / &quot;h2c://192.168.56.2:7777/&quot;
+&lt;/VirtualHost&gt;
+</code></pre><p>The configuration includes the following:</p>
+<ul>
+<li><code>*:8080</code> - Listen on port <code>8080</code>.</li>
+<li><code>ProxyPass</code> - Define the target address for traffic redirections. In our case this will forward incoming requests to the server located at <code>192.168.56.2:7777</code>. The <a href=https://httpd.apache.org/docs/2.4/mod/mod_proxy_http2.html><code>h2c</code></a> tells Apache to proxy each http/1.1 request to the backend using http/2 via TCP (no TLS).</li>
+<li><code>ProxyPassReverse</code> - This rewrites the original location, content location, and URI https response headers of the backend server with the proxy&rsquo;s information.</li>
+<li><code>ProxyPreserveHost</code> - This will pass the original Host header to the backend server.</li>
+</ul>
+<p>Also, you need to modify <code>/etc/apache2/ports.conf</code> and add the port specified above.</p>
+<blockquote>
+<p>NOTE: Please adjust the ip address of the backend server and the ports as needed.</p>
+</blockquote>
+<p>Finally, enable the new configuration.</p>
+<pre tabindex=0><code>sudo a2ensite reverse_proxy.conf
+sudo systemctl reload apache2
+</code></pre><p>You should now be able to access the backend server through your reverse proxy. In the example below I use curl to send a GET request to a <a href=https://open5gs.org/open5gs/docs/guide/02-building-open5gs-from-sources/>Open5GS</a> NRF listening on <code>192.168.56.2:7777</code>. Keep in mind that the Apache server runs on localhost and that the reverse proxy listens on port <code>8080</code> in our case.</p>
+<pre tabindex=0><code>$ curl -X GET http://127.0.0.1:8080/nnrf-nfm/v1/nf-instances
+{
+    &quot;_links&quot;: {
+        &quot;items&quot;: [{
+            &quot;href&quot;: &quot;http://192.168.56.2:7777/nnrf-nfm/v1/nf-instances/xyz&quot;
+        }],
+        &quot;self&quot;: {
+            &quot;href&quot;: &quot;http://192.168.56.2:7777/nnrf-nfm/v1/nf-instances
+        }
+    }
+}
+</code></pre>
+</div>
+<div class=post-footer>
+</div>
+</article>
+</main>
+<script async defer src=https://scripts.simpleanalyticscdn.com/latest.js></script>
+<noscript><img src=https://queue.simpleanalyticscdn.com/noscript.gif alt referrerpolicy=no-referrer-when-downgrade></noscript>
+</body>
+</html>
